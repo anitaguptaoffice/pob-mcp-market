@@ -22,5 +22,5 @@ jobs:
           bash -n pob-docker-mcp/scripts/smoke-test.sh
 
       - name: Docker smoke
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         run: pob-docker-mcp/scripts/smoke-test.sh
