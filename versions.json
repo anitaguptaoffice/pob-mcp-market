@@ -1,0 +1,8 @@
+{
+  "plugin": "0.1.0",
+  "image": "ghcr.io/anitaguptaoffice/pob-mcp:latest",
+  "pobMcp": "main",
+  "pathOfBuilding": "api-stdio",
+  "pobVersion": "2.65.0",
+  "treeVersion": "3_28"
+}

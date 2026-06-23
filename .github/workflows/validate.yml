@@ -1,0 +1,26 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate marketplace structure
+        run: python3 scripts/validate_market.py
+
+      - name: Shell syntax
+        run: |
+          bash -n pob-docker-mcp/scripts/pob-mcp-docker.sh
+          bash -n pob-docker-mcp/scripts/smoke-test.sh
+
+      - name: Docker smoke
+        if: github.event_name != 'pull_request'
+        run: pob-docker-mcp/scripts/smoke-test.sh
