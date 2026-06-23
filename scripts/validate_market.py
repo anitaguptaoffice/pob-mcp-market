@@ -17,7 +17,11 @@ def assert_file(path: Path):
 
 def main():
     marketplace = load_json(ROOT / "marketplace.json")
+    codex_marketplace = load_json(ROOT / ".agents" / "plugins" / "marketplace.json")
     versions = load_json(ROOT / "versions.json")
+
+    if marketplace != codex_marketplace:
+        raise SystemExit("marketplace.json and .agents/plugins/marketplace.json must match")
 
     if not versions["image"].startswith("ghcr.io/anitaguptaoffice/pob-mcp:"):
         raise SystemExit("versions.json image must point at ghcr.io/anitaguptaoffice/pob-mcp")
