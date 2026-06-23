@@ -10,8 +10,10 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 TMP_BUILDS="$(mktemp -d)"
+TMP_OUTPUT="$(mktemp)"
 cleanup() {
   rm -rf "${TMP_BUILDS}"
+  rm -f "${TMP_OUTPUT}"
 }
 trap cleanup EXIT
 
@@ -27,8 +29,30 @@ export POB_LUA_ENABLED=true
 export POE_TRADE_ENABLED=false
 
 echo "Starting PoB MCP smoke test..."
-{
-  printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"pob-docker-mcp-smoke","version":"0.1.0"}}}\n'
-  printf '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}\n'
-} | "${MCP_SCRIPT}" | grep -q '"tools"'
+TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
+if [ -n "${TIMEOUT_BIN}" ]; then
+  set +e
+  "${TIMEOUT_BIN}" 60 bash -c '
+    {
+      printf "%s\n" "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"pob-docker-mcp-smoke\",\"version\":\"0.1.0\"}}}"
+      printf "%s\n" "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}"
+    } | "$1"
+  ' _ "${MCP_SCRIPT}" >"${TMP_OUTPUT}" 2>&1
+  STATUS=$?
+  set -e
+else
+  set +e
+  {
+    printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"pob-docker-mcp-smoke","version":"0.1.0"}}}'
+    printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+  } | "${MCP_SCRIPT}" >"${TMP_OUTPUT}" 2>&1
+  STATUS=$?
+  set -e
+fi
+
+if ! grep -q '"tools"' "${TMP_OUTPUT}"; then
+  cat "${TMP_OUTPUT}" >&2
+  exit "${STATUS:-1}"
+fi
+
 echo "Smoke passed."
